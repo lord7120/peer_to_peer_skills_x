@@ -5,24 +5,14 @@ import "./index.css";
 // FontAwesome icons
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { 
-  faPeopleArrows, faHome, faUser, faLightbulb, faSearch, 
-  faComments, faExchangeAlt, faStar, faBars, faBell, 
-  faQuestionCircle, faHandshake, faCheck, faEnvelope, 
-  faLaptopCode, faPaintBrush, faLanguage, faMusic, 
-  faCamera, faCalculator, faHeartbeat, faEllipsisH, 
-  faClock, faArrowRight, faCalendar, faCloudUploadAlt,
-  faPlus, faTimes, faChevronDown, faEdit
+  faPeopleArrows, faHome, faUser, faCheck, faEnvelope, 
+  faLock, faEye, faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to the library
 library.add(
-  faPeopleArrows, faHome, faUser, faLightbulb, faSearch, 
-  faComments, faExchangeAlt, faStar, faBars, faBell, 
-  faQuestionCircle, faHandshake, faCheck, faEnvelope, 
-  faLaptopCode, faPaintBrush, faLanguage, faMusic, 
-  faCamera, faCalculator, faHeartbeat, faEllipsisH, 
-  faClock, faArrowRight, faCalendar, faCloudUploadAlt,
-  faPlus, faTimes, faChevronDown, faEdit
+  faPeopleArrows, faHome, faUser, faCheck, faEnvelope, 
+  faLock, faEye, faEyeSlash
 );
 
 createRoot(document.getElementById("root")!).render(<App />);

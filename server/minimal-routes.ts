@@ -1,18 +1,11 @@
+import express, { Express, Request, Response, NextFunction } from "express";
+import { createServer, Server } from "http";
+import { storage } from "./storage";
+import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
-import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
-import { log } from "./vite";
-
-declare global {
-  namespace Express {
-    interface User extends SelectUser {}
-  }
-}
 
 const scryptAsync = promisify(scrypt);
 
@@ -29,11 +22,34 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-export function setupAuth(app: Express) {
-  // Make sure we have a SESSION_SECRET before setting up sessions
+export function registerRoutes(app: Express): Server {
+  // Basic request logging
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+
+  // Enable CORS for development
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  // Add json body parser middleware
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // Session setup
   if (!process.env.SESSION_SECRET) {
     process.env.SESSION_SECRET = randomBytes(32).toString("hex");
-    log("Warning: Using a generated SESSION_SECRET. This will not persist across restarts.", "express");
+    console.log("Warning: Using a generated SESSION_SECRET. This will not persist across restarts.");
   }
 
   const sessionSettings: session.SessionOptions = {
@@ -52,6 +68,7 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Passport strategy
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
@@ -72,7 +89,7 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => {
+  passport.serializeUser((user: any, done) => {
     done(null, user.id);
   });
 
@@ -85,8 +102,13 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Register endpoint
-  app.post("/api/register", async (req, res, next) => {
+  // Health check endpoint
+  app.get('/api/health', (req: Request, res: Response) => {
+    res.json({ status: 'ok', message: 'API is working properly' });
+  });
+  
+  // Auth routes - Register
+  app.post("/api/register", async (req: Request, res: Response, next: NextFunction) => {
     try {
       console.log("Registration attempt:", req.body.username);
       
@@ -126,11 +148,11 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login endpoint
-  app.post("/api/login", (req, res, next) => {
+  // Auth routes - Login
+  app.post("/api/login", (req: Request, res: Response, next: NextFunction) => {
     console.log("Login attempt:", req.body.username);
 
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Login error:", err);
         return next(err);
@@ -149,8 +171,8 @@ export function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  // Logout endpoint
-  app.post("/api/logout", (req, res, next) => {
+  // Auth routes - Logout
+  app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
     console.log("Logout attempt");
     req.logout((err) => {
       if (err) return next(err);
@@ -158,14 +180,30 @@ export function setupAuth(app: Express) {
     });
   });
 
-  // Get current user
-  app.get("/api/user", (req, res) => {
+  // Auth routes - Current user
+  app.get("/api/user", (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
     // Return user without password
-    const { password, ...userWithoutPassword } = req.user;
+    const { password, ...userWithoutPassword } = req.user as any;
     res.json(userWithoutPassword);
   });
+
+  const httpServer = createServer(app);
+
+  // Log server start for debugging
+  httpServer.on('listening', () => {
+    const addr = httpServer.address();
+    const port = typeof addr === 'string' ? addr : addr?.port;
+    console.log(`HTTP server is listening on port ${port}`);
+  });
+
+  // Log server errors
+  httpServer.on('error', (error) => {
+    console.error('HTTP server error:', error);
+  });
+
+  return httpServer;
 }

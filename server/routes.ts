@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
@@ -8,26 +8,33 @@ import {
   insertExchangeSchema, 
   insertReviewSchema 
 } from "@shared/schema";
-import { WebSocketServer } from "ws";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
 
-  const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer });
-
-  // WebSocket for real-time messaging
-  wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-      // Broadcast messages to all clients
-      wss.clients.forEach((client) => {
-        if (client !== ws) {
-          client.send(message.toString());
-        }
-      });
-    });
+  // Enable CORS for development
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
   });
+
+  // Add any middleware before API routes
+  app.use(express.json());
+  
+  // Simple endpoint to test API connectivity
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'API is working properly' });
+  });
+
+  const httpServer = createServer(app);
 
   // API Routes
   
@@ -806,6 +813,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Error fetching stats" });
     }
+  });
+
+  // Log server start for debugging
+  httpServer.on('listening', () => {
+    const addr = httpServer.address();
+    const port = typeof addr === 'string' ? addr : addr?.port;
+    console.log('HTTP server is listening on port', port);
+  });
+
+  // Log server errors
+  httpServer.on('error', (error) => {
+    console.error('HTTP server error:', error);
   });
 
   return httpServer;

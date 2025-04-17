@@ -1,7 +1,7 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User } from '@shared/schema';
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
+import { User } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
-// Session context type
 type SessionContextType = {
   isAuthenticated: boolean;
   user: User | null;
@@ -12,73 +12,97 @@ type SessionContextType = {
   logout: () => Promise<void>;
 };
 
-// Create context with default values
 const SessionContext = createContext<SessionContextType | null>(null);
 
-// Custom provider component
+// Helper function to make API requests
+async function apiRequest(url: string, method: string, data?: any) {
+  const options: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  };
+
+  if (data) {
+    options.body = JSON.stringify(data);
+  }
+
+  const response = await fetch(url, options);
+  
+  // Handle HTTP errors
+  if (!response.ok) {
+    let errorMessage = 'An error occurred';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorMessage;
+    } catch (e) {
+      // If can't parse JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+  
+  // Check if there's content to parse
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  }
+  
+  return null;
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const { toast } = useToast();
 
-  // Check session status on mount
+  // Check if user is already logged in
   useEffect(() => {
-    const checkSession = async () => {
+    async function checkAuth() {
       try {
         setIsLoading(true);
-        setError(null);
-        
-        const response = await fetch('/api/user', {
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
-        } else if (response.status !== 401) {
-          // Only set error if it's not an auth issue (401 is expected when not logged in)
-          throw new Error(`Session check failed: ${response.status}`);
-        }
+        const userData = await apiRequest('/api/user', 'GET');
+        setUser(userData);
       } catch (error) {
-        console.error('Session check error:', error);
-        setError(error instanceof Error ? error : new Error(String(error)));
+        // If 401 unauthorized, just set user to null without showing error
+        if (error instanceof Error && error.message.includes('401')) {
+          setUser(null);
+        } else {
+          setError(error instanceof Error ? error : new Error(String(error)));
+          toast({
+            title: "Authentication Error",
+            description: error instanceof Error ? error.message : String(error),
+            variant: "destructive",
+          });
+        }
       } finally {
         setIsLoading(false);
       }
-    };
-    
-    checkSession();
-  }, []);
+    }
+
+    checkAuth();
+  }, [toast]);
 
   // Login function
   const login = async (credentials: { username: string; password: string }) => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(credentials),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Login failed');
-      }
-      
-      const userData = await response.json();
+      const userData = await apiRequest('/api/login', 'POST', credentials);
       setUser(userData);
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${userData.name || userData.username}!`,
+      });
     } catch (error) {
-      console.error('Login error:', error);
       setError(error instanceof Error ? error : new Error(String(error)));
+      toast({
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -90,27 +114,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(userData),
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-      
-      const newUser = await response.json();
+      const newUser = await apiRequest('/api/register', 'POST', userData);
       setUser(newUser);
+      toast({
+        title: "Registration Successful",
+        description: `Welcome, ${newUser.name || newUser.username}!`,
+      });
     } catch (error) {
-      console.error('Registration error:', error);
       setError(error instanceof Error ? error : new Error(String(error)));
+      toast({
+        title: "Registration Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -122,30 +138,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-      
+      await apiRequest('/api/logout', 'POST');
       setUser(null);
+      toast({
+        title: "Logout Successful",
+        description: "You have been successfully logged out.",
+      });
     } catch (error) {
-      console.error('Logout error:', error);
       setError(error instanceof Error ? error : new Error(String(error)));
+      toast({
+        title: "Logout Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Context value
   const value: SessionContextType = {
     isAuthenticated: !!user,
     user,
@@ -153,7 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     error,
     login,
     register,
-    logout
+    logout,
   };
 
   return (
@@ -163,11 +174,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Custom hook to use the context
 export function useSession() {
   const context = useContext(SessionContext);
   if (!context) {
-    throw new Error('useSession must be used within a SessionProvider');
+    throw new Error("useSession must be used within a SessionProvider");
   }
   return context;
 }
