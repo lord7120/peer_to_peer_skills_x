@@ -13,6 +13,7 @@ import SkillDetailPage from "@/pages/skill-detail-page";
 import AdminDashboard from "@/pages/admin-dashboard";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "./hooks/use-session";
+import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute, AdminRoute } from "./lib/simplified-protected-route";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -77,7 +78,9 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <QueryClientProvider client={queryClient}>
-            <Router />
+            <AuthProvider>
+              <Router />
+            </AuthProvider>
           </QueryClientProvider>
         </TooltipProvider>
       </SessionProvider>
