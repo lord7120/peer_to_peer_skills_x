@@ -1,14 +1,15 @@
+import { ReactNode } from "react";
 import { useSession } from "../hooks/use-session";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
-export function ProtectedRoute({
-  path,
-  component: Component,
-}: {
+type ProtectedRouteProps = {
   path: string;
-  component: () => React.JSX.Element;
-}) {
+  component?: () => React.JSX.Element;
+  children?: ReactNode;
+};
+
+export function ProtectedRoute({ path, component: Component, children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useSession();
 
   if (isLoading) {
@@ -29,16 +30,21 @@ export function ProtectedRoute({
     );
   }
 
-  return <Route path={path} component={Component} />;
+  // Return either the component or children
+  return (
+    <Route path={path}>
+      {Component ? <Component /> : children}
+    </Route>
+  );
 }
 
-export function AdminRoute({
-  path,
-  component: Component,
-}: {
+type AdminRouteProps = {
   path: string;
-  component: () => React.JSX.Element;
-}) {
+  component?: () => React.JSX.Element;
+  children?: ReactNode;
+};
+
+export function AdminRoute({ path, component: Component, children }: AdminRouteProps) {
   const { user, isLoading } = useSession();
 
   if (isLoading) {
@@ -67,5 +73,10 @@ export function AdminRoute({
     );
   }
 
-  return <Route path={path} component={Component} />;
+  // Return either the component or children
+  return (
+    <Route path={path}>
+      {Component ? <Component /> : children}
+    </Route>
+  );
 }

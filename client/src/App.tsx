@@ -1,6 +1,7 @@
 import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Layout } from "@/components/layout";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/home-page";
 import SimplifiedAuthPage from "@/pages/simplified-auth-page";
@@ -19,16 +20,52 @@ import { queryClient } from "./lib/queryClient";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
+      <Route path="/">
+        <Layout>
+          <HomePage />
+        </Layout>
+      </Route>
       <Route path="/auth" component={SimplifiedAuthPage} />
-      <Route path="/discover" component={DiscoverPage} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/profile/:username" component={ProfilePage} />
-      <ProtectedRoute path="/messages" component={MessagesPage} />
-      <ProtectedRoute path="/exchanges" component={ExchangesPage} />
-      <Route path="/skills/:id" component={SkillDetailPage} />
-      <AdminRoute path="/admin" component={AdminDashboard} />
-      <Route component={NotFound} />
+      <Route path="/discover">
+        <Layout>
+          <DiscoverPage />
+        </Layout>
+      </Route>
+      <ProtectedRoute path="/profile">
+        <Layout>
+          <ProfilePage />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/profile/:username">
+        <Layout>
+          <ProfilePage />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/messages">
+        <Layout>
+          <MessagesPage />
+        </Layout>
+      </ProtectedRoute>
+      <ProtectedRoute path="/exchanges">
+        <Layout>
+          <ExchangesPage />
+        </Layout>
+      </ProtectedRoute>
+      <Route path="/skills/:id">
+        <Layout>
+          <SkillDetailPage />
+        </Layout>
+      </Route>
+      <AdminRoute path="/admin">
+        <Layout>
+          <AdminDashboard />
+        </Layout>
+      </AdminRoute>
+      <Route>
+        <Layout>
+          <NotFound />
+        </Layout>
+      </Route>
     </Switch>
   );
 }
@@ -39,7 +76,9 @@ function App() {
       <SessionProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <QueryClientProvider client={queryClient}>
+            <Router />
+          </QueryClientProvider>
         </TooltipProvider>
       </SessionProvider>
     </ThemeProvider>
