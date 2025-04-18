@@ -166,13 +166,13 @@ export class MemStorage implements IStorage {
 
   async getOfferingSkills(): Promise<Skill[]> {
     return Array.from(this.skills.values()).filter(
-      (skill) => skill.isOffering
+      (skill) => skill.type === 'offering'
     );
   }
 
   async getRequestingSkills(): Promise<Skill[]> {
     return Array.from(this.skills.values()).filter(
-      (skill) => !skill.isOffering
+      (skill) => skill.type === 'requesting'
     );
   }
 
@@ -184,7 +184,8 @@ export class MemStorage implements IStorage {
       id, 
       createdAt: now,
       timeAvailability: skill.timeAvailability || null,
-      media: skill.media || null 
+      media: skill.media || null,
+      proficiencyLevel: skill.proficiencyLevel || null
     };
     this.skills.set(id, newSkill);
     return newSkill;
@@ -277,8 +278,11 @@ export class MemStorage implements IStorage {
       ...exchange, 
       id, 
       createdAt: now,
+      description: exchange.description || null,
       requesterSkillId: exchange.requesterSkillId || null,
       providerSkillId: exchange.providerSkillId || null,
+      startDate: exchange.startDate || null,
+      endDate: exchange.endDate || null,
       nextSession: exchange.nextSession || null
     };
     this.exchanges.set(id, newExchange);
