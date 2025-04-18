@@ -157,12 +157,16 @@ export function Navbar() {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Button variant="outline" onClick={() => navigate("/auth")}>
-                  Log in
-                </Button>
-                <Button onClick={() => navigate("/auth")}>
-                  Sign up
-                </Button>
+                <Link href="/auth">
+                  <Button variant="outline" className="w-full">
+                    Log in
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button className="w-full">
+                    Sign up
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
