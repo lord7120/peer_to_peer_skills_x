@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 export function Navbar() {
   const { user, isLoading, logout } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -74,12 +74,12 @@ export function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/">
-              <a className="flex items-center">
+              <div className="flex items-center cursor-pointer">
                 <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-white font-bold">
                   S
                 </div>
                 <span className="ml-3 text-2xl font-bold text-gray-900">SkillX</span>
-              </a>
+              </div>
             </Link>
           </div>
 
@@ -87,15 +87,15 @@ export function Navbar() {
           <nav className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link key={link.path} href={link.path}>
-                <a className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium flex items-center",
+                <div className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium flex items-center cursor-pointer",
                   location === link.path 
                     ? "bg-primary/10 text-primary" 
                     : "text-gray-600 hover:bg-gray-100"
                 )}>
                   {link.icon}
                   <span className="ml-2">{link.label}</span>
-                </a>
+                </div>
               </Link>
             ))}
           </nav>
@@ -157,12 +157,12 @@ export function Navbar() {
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link href="/auth">
-                  <Button variant="outline">Log in</Button>
-                </Link>
-                <Link href="/auth">
-                  <Button>Sign up</Button>
-                </Link>
+                <Button variant="outline" onClick={() => navigate("/auth")}>
+                  Log in
+                </Button>
+                <Button onClick={() => navigate("/auth")}>
+                  Sign up
+                </Button>
               </div>
             )}
           </div>
@@ -185,9 +185,9 @@ export function Navbar() {
             <div className="space-y-1">
               {navLinks.map((link) => (
                 <Link key={link.path} href={link.path}>
-                  <a
+                  <div
                     className={cn(
-                      "block px-3 py-2 rounded-md text-base font-medium flex items-center",
+                      "block px-3 py-2 rounded-md text-base font-medium flex items-center cursor-pointer",
                       location === link.path
                         ? "bg-primary/10 text-primary"
                         : "text-gray-600 hover:bg-gray-100"
@@ -196,7 +196,7 @@ export function Navbar() {
                   >
                     {link.icon}
                     <span className="ml-3">{link.label}</span>
-                  </a>
+                  </div>
                 </Link>
               ))}
               
