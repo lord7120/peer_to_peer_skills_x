@@ -240,8 +240,8 @@ export class DatabaseStorage implements IStorage {
             eq(exchanges.providerId, userId)
           ),
           or(
-            eq(exchanges.status, 'active'),
-            eq(exchanges.status, 'pending')
+            eq(exchanges.status, 'accepted'),
+            eq(exchanges.status, 'in_progress')
           )
         )
       )

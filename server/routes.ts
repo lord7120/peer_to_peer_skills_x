@@ -2,6 +2,9 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { db } from "./db";
+import { users, skills } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { 
   insertSkillSchema, 
   insertMessageSchema, 
@@ -725,8 +728,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized" });
       }
       
-      const users = Array.from(storage.users.values());
-      res.json(users);
+      const allUsers = await db.select().from(users);
+      // Remove passwords from response
+      const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Error fetching users" });
@@ -744,8 +749,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized" });
       }
       
-      const skills = Array.from(storage.skills.values());
-      res.json(skills);
+      const allSkills = await db.select().from(skills);
+      res.json(allSkills);
     } catch (error) {
       console.error("Error fetching skills:", error);
       res.status(500).json({ message: "Error fetching skills" });
@@ -765,13 +770,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const userId = parseInt(req.params.id);
       
-      // Remove the user from the in-memory storage
-      const success = storage.users.delete(userId);
+      // Delete the user from the database
+      const deleted = await db.delete(users).where(eq(users.id, userId)).returning({ id: users.id });
       
-      if (success) {
+      if (deleted.length > 0) {
         res.status(204).send();
       } else {
-        res.status(500).json({ message: "Failed to delete user" });
+        res.status(404).json({ message: "User not found" });
       }
     } catch (error) {
       console.error("Error deleting user:", error);
